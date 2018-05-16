@@ -137,6 +137,58 @@ void rotateAtVelocity(uint8_t addr, float vel) {}
  */
 void rotateAtCurrent(uint8_t addr, float cur) {}
 
+// <<<<<<< GET >>>>>>>
+
+/**
+ * Get status of avocado
+ *
+ * @param addr - address to set on device
+ */
+void getStatus(uint8_t addr) {}
+
+/**
+ * Get current maximum current
+ *
+ * @param addr - address of actuator
+ */
+void getMaxCurrent(uint8_t addr) {}
+
+/**
+ * Get current behavior to take in case of brain failure (identified through
+ * lack of heartbeats)
+ *
+ * @param addr - address of actuator
+ */
+void getStopBehavior(uint8_t addr) {}
+
+/**
+ * Get current position
+ *
+ * @param addr - address of actuator
+ */
+void getPosition(uint8_t addr) {}
+
+/**
+ * Get current velocity
+ *
+ * @param addr - address of actuator
+ */
+void getVelocity(uint8_t addr) {}
+
+/**
+ * Get current current
+ *
+ * @param addr - address of actuator
+ */
+void getCurrent(uint8_t addr) {}
+
+/**
+ * Get temperature of actuator
+ *
+ * @param addr - address of actuator
+ */
+void getTemperature(uint8_t addr) {}
+
 /**
  * Returns string corresponding to given enum value.
  *

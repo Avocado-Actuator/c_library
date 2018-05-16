@@ -48,9 +48,9 @@ void rotateAtCurrent(uint8_t, float);
 // <<<< get >>>>
 
 // logistics
+void getStatus(uint8_t);
 void getMaxCurrent(uint8_t);
 void getStopBehavior(uint8_t);
-void getStatus(uint8_t);
 
 // sensors
 void getPosition(uint8_t);
