@@ -75,10 +75,14 @@ enum Command {
 };
 
 enum Parameter {
-    Pos = 0,
-    Vel = 1,
-    Cur = 2,
-    Tmp = 3
+    Add     = 0,
+    Tmp     = 1,
+    Cur     = 2,
+    Vel     = 3,
+    Pos     = 4,
+    MaxCur  = 5,
+    EStop   = 6,
+    Status  = 7
 };
 
 #endif /* RS485_H_ */
