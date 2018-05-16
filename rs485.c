@@ -81,10 +81,61 @@ void UARTSend(uint8_t address, const uint8_t *pui8Buffer, uint32_t ui32Count) {
 /**
  * Sends empty message on address `11111111` so avocados know to keep working
  */
-void heartBeat() {
-    uint8_t address = 0xFF;
-    UARTSend(address, NULL, 0);
-}
+void heartBeat() { UARTSend(0xFF, NULL, 0); }
+
+// <<<<<<<<<<<<<<<<<<>>>>>>>>>>>>>>>>>>
+// <<<<<<<<<<<<< MESSAGES >>>>>>>>>>>>>
+// <<<<<<<<<<<<<<<<<<>>>>>>>>>>>>>>>>>>
+
+// <<<<<<< SET >>>>>>>
+
+/**
+ * Set address of any other devices on bus
+ *
+ * @param addr - address to set on device
+ */
+void setAddress(uint8_t addr) {}
+
+/**
+ * Set maximum current for actuator
+ *
+ * @param addr - address of actuator
+ * @param maxCurr - maximum current in amps that actuator should throttle to
+ */
+void setMaxCurrent(uint8_t addr, float maxCurr) {}
+
+/**
+ * Set behavior to take in case of brain failure (identified through lack of
+ * heartbeats)
+ *
+ * @param addr - address of actuator
+ * @param eStopBehavior - bitmask indicating behavior to take in case of failure
+ */
+void setStopBehavior(uint8_t addr, float eStopBehavior) {}
+
+/**
+ * Rotate given actuator to given position
+ *
+ * @param addr - address of actuator
+ * @param pos - angle to rotate actuator to (in radians)
+ */
+void rotateToPosition(uint8_t addr, float pos) {}
+
+/**
+ * Rotate given actuator at given velocity
+ *
+ * @param addr - address of actuator
+ * @param vel - velocity to rotate at (in rpm)
+ */
+void rotateAtVelocity(uint8_t addr, float vel) {}
+
+/**
+ * Rotate given actuator at given current
+ *
+ * @param addr - address of actuator
+ * @param cur - current to rotate at (in amps)
+ */
+void rotateAtCurrent(uint8_t addr, float cur) {}
 
 /**
  * Returns string corresponding to given enum value.
@@ -247,16 +298,6 @@ void UARTSetWrite() { GPIOPinWrite(GPIO_PORTC_BASE, GPIO_PIN_6, GPIO_PIN_6); }
  * @return our address
  */
 uint8_t UARTGetAddress() { return BRAIN_ADDRESS; }
-
-/**
- * Sets address of any other devices on bus
- *
- * @param addr - address to set on device
- */
-void UARTSetAddress(uint8_t addr) {
-  // TODO: implement
-  return;
-}
 
 /**
  * Prints a float

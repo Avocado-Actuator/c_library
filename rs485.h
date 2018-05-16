@@ -36,7 +36,7 @@ uint8_t UARTGetAddress(void);
 // <<<< set >>>>
 
 // logistics
-void setAddress(float);
+void setAddress(uint8_t);
 void setMaxCurrent(uint8_t, float);
 void setStopBehavior(uint8_t, float);
 
