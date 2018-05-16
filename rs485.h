@@ -1,10 +1,3 @@
-/*
- * rs485.h
- *
- *  Created on: Apr 21, 2018
- *      Author: Ryan
- */
-
 #ifndef RS485_H_
 #define RS485_H_
 
@@ -24,27 +17,54 @@
 #include "driverlib/rom.h"
 #include "driverlib/rom_map.h"
 #include "crc.h"
-#include "motor.h"
-#include "isense.h"
-#include "temp.h"
 
 void RSInit(uint32_t);
 void UARTIntHandler(void);
-void UARTSend(const uint8_t*, uint32_t);
+void UARTSend(uint8_t, const uint8_t*, uint32_t);
 bool UARTReady(void);
 void UARTSetRead(void);
 void UARTSetWrite(void);
 void UARTSetAddress(uint8_t);
+void UARTPrintFloat(float, bool);
 uint8_t UARTGetAddress(void);
 
-void UARTPrintFloat(float, bool);
+// message functions
+// in future message functions
+// should return something actionable
+// for now just print out an echo
+
+// <<<< set >>>>
+
+// logistics
+void setAddress(float);
+void setMaxCurrent(uint8_t, float);
+void setStopBehavior(uint8_t, float);
+
+// movement
+void rotateToPosition(uint8_t, float);
+void rotateAtVelocity(uint8_t, float);
+void rotateAtCurrent(uint8_t, float);
+
+// <<<< get >>>>
+
+// logistics
+void getMaxCurrent(uint8_t);
+void getStopBehavior(uint8_t);
+void getStatus(uint8_t);
+
+// sensors
+void getPosition(uint8_t);
+void getVelocity(uint8_t);
+void getCurrent(uint8_t);
+void getTemperature(uint8_t);
+
+// <<<< data >>>>
 
 uint32_t uartSysClock;
 static uint8_t STOPBYTE = '!';
 uint8_t cmdmask, parmask, heartmask, addrmask, posval, curval, velval, tempval;
 
-union Flyte
-{
+union Flyte {
   float f;
   uint8_t bytes[sizeof(float)];
 };
