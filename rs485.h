@@ -75,7 +75,7 @@ enum Command {
 };
 
 enum Parameter {
-    Add     = 0,
+    Adr     = 0,
     Tmp     = 1,
     Cur     = 2,
     Vel     = 3,

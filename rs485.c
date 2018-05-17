@@ -29,13 +29,8 @@ void RSInit(uint32_t g_ui32SysClock) {
     ROM_IntEnable(INT_UART7);
     ROM_UARTIntEnable(UART7_BASE, UART_INT_RX | UART_INT_RT);
     addrmask = 0b00001111;
-    cmdmask = 0b00010000; // when you filter message with this, 1 is SET and 0 is GET
-    parmask = 0b01100000; // just parameter selector bits
-    heartmask = 0b10000000;
-    posval = 0b00000000;  // 00 selector bits
-    curval = 0b00100000;  // 01 selector bits
-    velval = 0b01000000;  // 10 selector bits
-    tempval = 0b01100000; // 11 selector bits
+    cmdmask = 0b10000000; // command selector bits (0 = get, 1 = set)
+    parmask = 0b00000111; // parameter selector bits
     UARTprintf("RS485 initialized\n");
 }
 
