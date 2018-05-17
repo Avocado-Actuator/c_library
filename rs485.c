@@ -192,10 +192,14 @@ void getTemperature(uint8_t addr) {}
  */
 const char* getParameterName(enum Parameter par) {
     switch(par) {
-        case Pos: return "Pos";
-        case Vel: return "Vel";
-        case Cur: return "Cur";
+        case Adr: return "Adr";
         case Tmp: return "Tmp";
+        case Cur: return "Cur";
+        case Vel: return "Vel";
+        case Pos: return "Pos";
+        case MaxCur: return "MaxCur";
+        case EStop: return "EStop";
+        case Status: return "Status";
         default: return "NOP";
     }
 }
