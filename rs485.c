@@ -215,113 +215,12 @@ const char* getCommandName(enum Command cmd) {
 }
 
 /**
- * Takes actions on message as appropriate.
- *
- * If address does not match our own, bail out and send message on.
- *
- * @param buffer - pointer to the message
- * @param length - the length of the message
- * @param verbose - if true print to console for debugging
- * @param echo - if true simply echo the message, can also be helpful for debugging
- * @return if we successfully handled a message meant for us
- */
-bool handleUART(char* buffer, uint32_t length, bool verbose, bool echo) {
-    if(echo) {
-        // UARTSend((uint8_t *)buffer, length);
-        int i;
-        for(i = 0; i < length; ++i) {
-            UARTprintf("Text[%d]: %s\n", i, buffer[i]);
-        }
-    } else {
-        UARTprintf("\n\nText: %s\n\n", buffer);
-
-        // get address
-        char tempaddr = buffer[0] & addrmask;
-        if(verbose) UARTprintf("Address: %d\n", tempaddr);
-
-        if(tempaddr != UARTGetAddress()) {
-            if(verbose) UARTprintf("Not my address, abort");
-            return true; // changed to return true so that an error response is not generated
-        }
-
-        if(buffer[0] & heartmask != 0) {
-            // called for heartbeat messages, where brain sends just address and 0's in prefix byte
-            heartBeat();
-            return true;
-        }
-
-        enum Command type = buffer[0] & cmdmask ? Set : Get;
-        if(verbose) UARTprintf("Command: %s\n", getCommandName(type));
-
-        // get parameter - { pos, vel, cur }
-        enum Parameter par;
-        uint8_t selector = buffer[0] & parmask;
-        if(selector == posval) par = Pos;
-        else if(selector == velval) par = Vel;
-        else if(selector == curval) par = Cur;
-        else if(selector == tempval) par = Tmp;
-        else {
-            if(verbose) UARTprintf("No parameter specified, abort");
-            return false;
-        }
-
-        if(verbose) UARTprintf("Parameter: %s\n", getParameterName(par));
-
-        if(type == Set) {
-            if(length < 7){
-                if(verbose) UARTprintf("No value provided, abort\n");
-                return false;
-            }
-            // if set command then get parameter value to set to
-            // since the first byte is the addr/command/parameter,
-            // if the cmd is Set then the next entity is a value
-            // this value MUST be a single float
-            // which takes the next four bytes of buffer (followed by STOPBYTE)
-            union Flyte setval;
-            int i;
-            for(i = 0; i < 4; ++i) { setval.bytes[i] = buffer[i+1]; }
-
-            if(verbose) {
-                UARTprintf("Set val: ");
-                UARTPrintFloat(setval.f, false);
-            }
-        } else {}
-    }
-
-    return true;
-}
-
-/**
  * Handles a UART interrupt
  */
 void UARTIntHandler(void) {
-    uint32_t ui32Status;
-    // get the interrupt status
-    ui32Status = ROM_UARTIntStatus(UART7_BASE, true);
-    // clear the asserted interrupts
-    ROM_UARTIntClear(UART7_BASE, ui32Status);
-    // initialize recv buffer
-    char recv[10] = "";
-    uint32_t ind = 0;
-    char curr = ROM_UARTCharGet(UART7_BASE);
-    // loop while there are bytes in receive FIFO
-    while(curr != STOPBYTE && ind < 10) {
-        recv[ind] = curr;
-        curr = ROM_UARTCharGet(UART7_BASE);
-        ++ind;
-    }
-
-    // keep stop byte for tokenizing
-    recv[ind] = curr;
-    ++ind;
-
-    /*uint8_t crcin = recv[ind-1];
-    if(crc8(0, (uint8_t *)recv, ind - 1) != crcin){
-        // ********** ERROR ***********
-        // Handle corrupted message
-    }*/
-
-    handleUART(recv, ind, true, true);
+    // for now do nothing
+    // TODO: iron out behavior here
+    return;
 }
 
 /**
