@@ -1,6 +1,6 @@
 #include "rs485.h"
 
-uint8_t BRAIN_ADDRESS = 0x00;
+uint8_t BRAIN_ADDRESS, BROADCASTADDR, ADDRSETADDR;
 
 /**
  * Initializes clock and pins for RS485 communication
@@ -31,6 +31,9 @@ void RSInit(uint32_t g_ui32SysClock) {
     addrmask = 0b00001111;
     cmdmask = 0b10000000; // command selector bits (0 = get, 1 = set)
     parmask = 0b00000111; // parameter selector bits
+    BRAIN_ADDRESS = 0x00;
+    BROADCASTADDR = 0xFF;
+    ADDRSETADDR = 0xFE;
     UARTprintf("RS485 initialized\n");
 }
 
@@ -73,10 +76,65 @@ void UARTSend(uint8_t address, const uint8_t *pui8Buffer, uint32_t ui32Count) {
     while(!space) { space = ROM_UARTCharPutNonBlocking(UART7_BASE, STOPBYTE); }
 }
 
+// <<<<<<<<<<<<<<<<<<>>>>>>>>>>>>>>>>>>
+// <<<<<<<<<<<<< SENDS >>>>>>>>>>>>>
+// <<<<<<<<<<<<<<<<<<>>>>>>>>>>>>>>>>>>
+
+/**
+ * Send a get message
+ *
+ * @param addr - address of actuator
+ * @param pParMask - mask of parameter to get
+ */
+void sendGet(uint8_t addr, uint8_t pParMask) {
+    // since get is 0 in msb of pParMask no need to do anything
+    uint8_t msg[2] = { addr, pParMask };
+    UARTSend(msg, 2);
+}
+
+/**
+ * Send a set message
+ *
+ * @param addr - address of actuator
+ * @param pParMask - mask of parameter to get
+ * @param pParVal - float value to set
+ */
+void sendSetFloatPar(uint8_t addr, uint8_t pParMask, float pParVal) {
+    uint8_t msgLen = 6; // 1 byte for addr, 1 for mask, 4 for val
+    uint8_t msg[msgLen];
+    msg[0] = addr;
+    msg[1] = 0b10000000 | pParMask;
+
+    union Flyte parVal;
+    parVal.f = pParVal;
+    int i;
+    for(i = 0; i < 4; ++i)
+        msg[i+2] = parVal.bytes[i];
+
+    UARTSend(msg, msgLen);
+}
+
+/**
+ * Send a set message
+ *
+ * @param addr - address of actuator
+ * @param pParMask - mask of parameter to get
+ * @param pParVal - byte value to set
+ */
+void sendSetBytePar(uint8_t addr, uint8_t pParMask, uint8_t pParVal) {
+    uint8_t msgLen = 3; // 1 byte for addr, 1 for mask, 1 for val
+    uint8_t msg[msgLen];
+    msg[0] = addr;
+    msg[1] = 0b10000000 | pParMask;
+    msg[2] = pParVal;
+
+    UARTSend(msg, msgLen);
+}
+
 /**
  * Sends empty message on address `11111111` so avocados know to keep working
  */
-void heartBeat() { UARTSend(0xFF, NULL, 0); }
+void heartBeat() { UARTSend(BROADCASTADDR, NULL, 0); }
 
 // <<<<<<<<<<<<<<<<<<>>>>>>>>>>>>>>>>>>
 // <<<<<<<<<<<<< MESSAGES >>>>>>>>>>>>>
@@ -183,6 +241,10 @@ void getCurrent(uint8_t addr) {}
  * @param addr - address of actuator
  */
 void getTemperature(uint8_t addr) {}
+
+// <<<<<<<<<<<<<<<<<<>>>>>>>>>>>>>>>>>>
+// <<<<<<<<<<<< UTILITIES >>>>>>>>>>>>>
+// <<<<<<<<<<<<<<<<<<>>>>>>>>>>>>>>>>>>
 
 /**
  * Returns string corresponding to given enum value.
