@@ -38,7 +38,7 @@ uint8_t UARTGetAddress(void);
 // logistics
 void setAddress(uint8_t);
 void setMaxCurrent(uint8_t, float);
-void setStopBehavior(uint8_t, float);
+void setEStopBehavior(uint8_t, uint8_t);
 
 // movement
 void rotateToPosition(uint8_t, float);

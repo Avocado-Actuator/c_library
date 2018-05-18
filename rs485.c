@@ -165,7 +165,9 @@ void setMaxCurrent(uint8_t addr, float maxCurr) {
  * @param addr - address of actuator
  * @param eStopBehavior - bitmask indicating behavior to take in case of failure
  */
-void setStopBehavior(uint8_t addr, float eStopBehavior) {}
+void setEStopBehavior(uint8_t addr, uint8_t eStopBehavior) {
+    sendSetBytePar(addr, (uint8_t) EStop, eStopBehavior);
+}
 
 /**
  * Rotate given actuator to given position
