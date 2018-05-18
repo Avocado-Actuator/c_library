@@ -144,7 +144,9 @@ void heartBeat() { UARTSend((uint8_t[]) { BROADCASTADDR }, 1); }
  *
  * @param addr - address to set on device
  */
-void setAddress(uint8_t addr) {}
+void setAddress(uint8_t addr) {
+    sendSetBytePar(ADDRSETADDR, (uint8_t) Adr, addr);
+}
 
 /**
  * Set maximum current for actuator
