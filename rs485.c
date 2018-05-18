@@ -175,7 +175,9 @@ void setEStopBehavior(uint8_t addr, uint8_t eStopBehavior) {
  * @param addr - address of actuator
  * @param pos - angle to rotate actuator to (in radians)
  */
-void rotateToPosition(uint8_t addr, float pos) {}
+void rotateToPosition(uint8_t addr, float pos) {
+    sendSetFloatPar(addr, (uint8_t) Pos, pos);
+}
 
 /**
  * Rotate given actuator at given velocity
