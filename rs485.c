@@ -129,9 +129,9 @@ void sendSetBytePar(uint8_t addr, uint8_t pParMask, uint8_t pParVal) {
 }
 
 /**
- * Sends empty message on address `11111111` so avocados know to keep working
+ * Sends empty message on address BROADCASTADDR so avocados know to keep working
  */
-void heartBeat() { UARTSend(BROADCASTADDR, NULL, 0); }
+void heartBeat() { UARTSend((uint8_t[]) { BROADCASTADDR }, 1); }
 
 // <<<<<<<<<<<<<<<<<<>>>>>>>>>>>>>>>>>>
 // <<<<<<<<<<<<< MESSAGES >>>>>>>>>>>>>
