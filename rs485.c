@@ -185,7 +185,9 @@ void rotateToPosition(uint8_t addr, float pos) {
  * @param addr - address of actuator
  * @param vel - velocity to rotate at (in rpm)
  */
-void rotateAtVelocity(uint8_t addr, float vel) {}
+void rotateAtVelocity(uint8_t addr, float vel) {
+    sendSetFloatPar(addr, (uint8_t) Vel, vel);
+}
 
 /**
  * Rotate given actuator at given current
