@@ -195,7 +195,9 @@ void rotateAtVelocity(uint8_t addr, float vel) {
  * @param addr - address of actuator
  * @param cur - current to rotate at (in amps)
  */
-void rotateAtCurrent(uint8_t addr, float cur) {}
+void rotateAtCurrent(uint8_t addr, float cur) {
+    sendSetFloatPar(addr, (uint8_t) Cur, cur);
+}
 
 // <<<<<<< GET >>>>>>>
 
