@@ -234,7 +234,9 @@ void getStopBehavior(uint8_t addr) {
  *
  * @param addr - address of actuator
  */
-void getPosition(uint8_t addr) {}
+void getPosition(uint8_t addr) {
+    sendGet(addr, (uint8_t) Pos);
+}
 
 /**
  * Get current velocity
