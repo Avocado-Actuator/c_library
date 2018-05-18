@@ -225,7 +225,9 @@ void getMaxCurrent(uint8_t addr) {
  *
  * @param addr - address of actuator
  */
-void getStopBehavior(uint8_t addr) {}
+void getStopBehavior(uint8_t addr) {
+    sendGet(addr, (uint8_t) EStop);
+}
 
 /**
  * Get current position
