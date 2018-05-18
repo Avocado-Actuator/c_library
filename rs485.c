@@ -243,7 +243,9 @@ void getPosition(uint8_t addr) {
  *
  * @param addr - address of actuator
  */
-void getVelocity(uint8_t addr) {}
+void getVelocity(uint8_t addr) {
+    sendGet(addr, (uint8_t) Vel);
+}
 
 /**
  * Get current current
