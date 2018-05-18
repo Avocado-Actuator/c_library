@@ -261,7 +261,9 @@ void getCurrent(uint8_t addr) {
  *
  * @param addr - address of actuator
  */
-void getTemperature(uint8_t addr) {}
+void getTemperature(uint8_t addr) {
+    sendGet(addr, (uint8_t) Tmp);
+}
 
 // <<<<<<<<<<<<<<<<<<>>>>>>>>>>>>>>>>>>
 // <<<<<<<<<<<< UTILITIES >>>>>>>>>>>>>
