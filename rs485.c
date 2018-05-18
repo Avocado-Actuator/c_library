@@ -215,7 +215,9 @@ void getStatus(uint8_t addr) {
  *
  * @param addr - address of actuator
  */
-void getMaxCurrent(uint8_t addr) {}
+void getMaxCurrent(uint8_t addr) {
+    sendGet(addr, (uint8_t) MaxCur);
+}
 
 /**
  * Get current behavior to take in case of brain failure (identified through
