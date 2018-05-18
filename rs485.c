@@ -252,7 +252,9 @@ void getVelocity(uint8_t addr) {
  *
  * @param addr - address of actuator
  */
-void getCurrent(uint8_t addr) {}
+void getCurrent(uint8_t addr) {
+    sendGet(addr, (uint8_t) Cur);
+}
 
 /**
  * Get temperature of actuator
