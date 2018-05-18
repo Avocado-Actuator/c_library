@@ -206,7 +206,9 @@ void rotateAtCurrent(uint8_t addr, float cur) {
  *
  * @param addr - address to set on device
  */
-void getStatus(uint8_t addr) {}
+void getStatus(uint8_t addr) {
+    sendGet(addr, (uint8_t) Status);
+}
 
 /**
  * Get current maximum current
