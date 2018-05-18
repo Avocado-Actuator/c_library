@@ -43,7 +43,7 @@ void RSInit(uint32_t g_ui32SysClock) {
  * @param pui8Buffer  - pointer to byte buffer to send over RS485
  * @param ui32Count   - length of buffer in bytes
  */
-void UARTSend(uint8_t address, const uint8_t *pui8Buffer, uint32_t ui32Count) {
+void UARTSend(const uint8_t *pui8Buffer, uint32_t ui32Count) {
     // TODO: implement construction of prefix bytes by ORing masks
     // TODO: create data flags avocados can flip for the brain
 
@@ -53,9 +53,6 @@ void UARTSend(uint8_t address, const uint8_t *pui8Buffer, uint32_t ui32Count) {
     // set transceiver rx/tx pin high to send
     UARTSetWrite();
     bool space = true;
-    // send the prefix w/address and flags
-    space = ROM_UARTCharPutNonBlocking(UART7_BASE, address);
-    while(!space) { space = ROM_UARTCharPutNonBlocking(UART7_BASE, address); }
     // loop while there are more bytes
     while(ui32Count--) {
         // write next byte to UART
