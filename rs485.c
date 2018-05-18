@@ -154,7 +154,9 @@ void setAddress(uint8_t addr) {
  * @param addr - address of actuator
  * @param maxCurr - maximum current in amps that actuator should throttle to
  */
-void setMaxCurrent(uint8_t addr, float maxCurr) {}
+void setMaxCurrent(uint8_t addr, float maxCurr) {
+    sendSetFloatPar(addr, (uint8_t) MaxCur, maxCurr);
+}
 
 /**
  * Set behavior to take in case of brain failure (identified through lack of
