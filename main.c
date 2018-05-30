@@ -13,6 +13,9 @@
 #include "driverlib/uart.h"
 #include "utils/uartstdio.h"
 #include "utils/uartstdio.c"
+
+#include "rs485.h"
+
 // System clock rate in Hz.
 uint32_t g_ui32SysClock;
 
@@ -50,12 +53,31 @@ void ConsoleInit(void) {
 // PROPERTIES SET C SYSTEM STACK SIZE TO 65536
 //*****************************************************************************
 int main(void) {
+    ConsoleInit(); // initialized UART0 for console output using UARTStdio
+    UARTprintf("\n\nTiva has turned on...\n");
     // Set the clocking to run directly from the crystal at 120MHz.
     g_ui32SysClock = MAP_SysCtlClockFreqSet((SYSCTL_XTAL_25MHZ | SYSCTL_OSC_MAIN
             | SYSCTL_USE_PLL | SYSCTL_CFG_VCO_480), 120000000);
     ROM_IntMasterEnable(); // enable processor interrupts.
+    RSInit(g_ui32SysClock); // Initialize the RS485 link
     ConsoleInit(); // initialized UART0 for console output using UARTStdio
-    UARTprintf("\n\nTiva has turned on...\n");
+    //UARTSend((uint8_t *)"\033[2JTiva has turned on\n\r", 24);
 
-    while(1) {}
+    UARTprintf("Initializing...\n");
+
+    int counter = 0;
+    while(1) {
+        // Check the busy flag in the uart7 register. If not busy, set transceiver pin low
+        if (UARTReady()){
+            UARTSetRead();
+        }
+
+        if(counter == 0) {
+            setAddress(1);
+            setMaxCurrent(1, 5.0);
+            rotateToPosition(1, 7.0);
+        }
+
+        ++counter;
+    }
 }
