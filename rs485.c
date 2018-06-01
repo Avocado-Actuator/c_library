@@ -59,25 +59,8 @@ void UARTSend(const uint8_t *pui8Buffer, uint32_t ui32Count) {
     uint8_t crc = crc8(0, pui8Buffer, ui32Count);
     // set transceiver rx/tx pin high to send
     UARTSetWrite();
-    bool space = true;
-    // loop while there are more bytes
-    while(ui32Count--) {
-        // write next byte to UART
-        // putchar returns false if the send FIFO is full
-        space = ROM_UARTCharPutNonBlocking(UART7_BASE, *pui8Buffer);
-        // if send FIFO is full, wait until we can put the char in
-        while (!space) {
-            space = ROM_UARTCharPutNonBlocking(UART7_BASE, *pui8Buffer);
-        }
-        *pui8Buffer++;
-    }
-    // send CRC for error-checking
-    space = ROM_UARTCharPutNonBlocking(UART7_BASE, crc);
-    while(!space) { space = ROM_UARTCharPutNonBlocking(UART7_BASE, crc); }
 
-    // send stopbyte
-    space = ROM_UARTCharPutNonBlocking(UART7_BASE, STOPBYTE);
-    while(!space) { space = ROM_UARTCharPutNonBlocking(UART7_BASE, STOPBYTE); }
+    // proton printf buffer, then crc, then STOP_BYTE
 }
 
 // <<<<<<<<<<<<<<<<<<>>>>>>>>>>>>>>>>>>
