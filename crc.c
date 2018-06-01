@@ -54,20 +54,3 @@ unsigned crc8(unsigned crc, unsigned char const *data, size_t len) {
     while (data < end) crc = crc8_table[crc ^ *data++];
     return crc;
 }
-
-// crc8_slow() is an equivalent bit-wise implementation of crc8() that does not
-// need a table, and which can be used to generate crc8_table[]. Entry k in the
-// table is the CRC-8 of the single byte k, with an initial crc value of zero.
-// 0xb2 is the bit reflection of 0x4d, the polynomial coefficients below x^8.
-unsigned crc8_slow(unsigned crc, unsigned char const *data, size_t len) {
-    if(data == NULL) return 0;
-
-    crc = ~crc & 0xff;
-    while(len--) {
-        crc ^= *data++;
-        uint8_t k;
-        for(k = 0; k < 8; k++)
-            crc = crc & 1 ? (crc >> 1) ^ 0xb2 : crc >> 1;
-    }
-    return crc ^ 0xff;
-}
