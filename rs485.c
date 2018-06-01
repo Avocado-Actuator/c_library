@@ -311,16 +311,7 @@ const char* getCommandName(enum Command cmd) {
 }
 
 /**
- * Handles a UART interrupt
- */
-void UARTIntHandler(void) {
-    // for now do nothing
-    // TODO: iron out behavior here
-    return;
-}
-
-/**
- * Checks if UART is ready to send
+ * Check if UART is ready to send.
  *
  * @return true if we are ready, false otherwise
  */
@@ -353,4 +344,65 @@ void UARTPrintFloat(float val, bool verbose) {
     verbose
         ? UARTprintf("val, length: %s, %d\n", str, strlen(str))
         : UARTprintf("%s\n", str);
+}
+
+// <<<<<<<<<<<<<<<<<<>>>>>>>>>>>>>>>>>>
+// <<<<<<<<<<<<< HANDLING >>>>>>>>>>>>>
+// <<<<<<<<<<<<<<<<<<>>>>>>>>>>>>>>>>>>
+
+/**
+ * Take actions on message as appropriate.
+ *
+ * If address does not match our own, bail out and send message on.
+ *
+ * @param buffer - pointer to the message
+ * @param length - the length of the message
+ * @param verbose - if true print to console for debugging
+ * @param echo - if true simply echo the message, can also be helpful for debugging
+ * @return if we successfully handled a message meant for us
+ */
+bool handleUART(char* buffer, uint32_t length, bool verbose, bool echo) {
+    // CURRENTLY ONLY EVER ECHOING
+    UARTSend((uint8_t *) buffer, length);
+    int i;
+    for (i = 0; i < length; ++i) {
+        UARTprintf("Text[%d]: %s\n", i, buffer[i]);
+    }
+    return false;
+}
+
+/**
+ * UART interrupt handler, fires when character received.
+ *
+ * Currently blocks getting all characters.
+ * TODO: asynchronously receive characters, add to buffer
+ */
+void UARTIntHandler(void) {
+    // get interrupt status
+    uint32_t ui32Status = ROM_UARTIntStatus(UART7_BASE, true);
+    // clear asserted interrupts
+    ROM_UARTIntClear(UART7_BASE, ui32Status);
+    // initialize recv buffer
+    char recv[10] = "";
+    uint32_t ind = 0;
+    char curr = ROM_UARTCharGet(UART7_BASE);
+    // Loop while there are characters in the receive FIFO.
+    while(curr != STOPBYTE && ind < 10) {
+        recv[ind] = curr;
+        ind++;
+        curr = ROM_UARTCharGet(UART7_BASE);
+    }
+
+    // keep stop byte for tokenizing
+    recv[ind] = curr;
+    ind++;
+
+    /*uint8_t crcin = recv[ind-2];
+    if (crc8(0, (uint8_t *)recv, ind-2) != crcin){
+        // ********** ERROR ***********
+        // Handle corrupted message
+    }*/
+
+    // handle given message
+    handleUART(recv, ind, true, true);
 }
