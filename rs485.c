@@ -1,6 +1,13 @@
 #include "rs485.h"
 
 uint8_t BRAIN_ADDRESS, BROADCASTADDR, ADDRSETADDR;
+uint8_t ESTOP_HOLD      = 0b11111111;
+uint8_t ESTOP_KILL      = 0b11111110;
+uint8_t COMMAND_SUCCESS = 0b11111111;
+uint8_t COMMAND_FAILURE = 0b11111101;
+uint8_t OUTPUT_LIMITING = 0b11111111;
+uint8_t OUTPUT_FREE     = 0b11111011;
+uint8_t MAX_PARAMETER_VALUE = 0x9;
 
 /**
  * Initializes clock and pins for RS485 communication
