@@ -19,17 +19,17 @@
 // System clock rate in Hz.
 uint32_t g_ui32SysClock;
 
-//***************************************************************************
-// The error routine that is called if the driver library encounters an error
-//***************************************************************************
+
+/**
+ * Error routine called if the driver library encounters an error
+ */
 #ifdef DEBUG
 void __error__(char *pcFilename, uint32_t ui32Line) {}
 #endif
 
-
-//*****************************************************
-// Initializes UART0 for console output using UARTStdio
-//*****************************************************
+/**
+ * Initializes UART0 for console output (for debugging) using UARTStdio
+ */
 void ConsoleInit(void) {
     // Enable GPIO port A which is used for UART0 pins.
     SysCtlPeripheralEnable(SYSCTL_PERIPH_GPIOA);
@@ -47,30 +47,25 @@ void ConsoleInit(void) {
     UARTStdioConfig(0, 115200, 16000000);
 }
 
-//*****************************************************************************
-// SUPER IMPORTANT, CCS IS JANK, NEED TO INCREASE STACK SIZE MANUALLY IN ORDER
-// TO USE SPRINTF, GO TO Build -> ARM Linker -> Basic Options IN PROJECT
-// PROPERTIES SET C SYSTEM STACK SIZE TO 65536
-//*****************************************************************************
+/**
+ * SUPER IMPORTANT, CCS IS JANK, NEED TO INCREASE STACK SIZE MANUALLY IN ORDER
+ * TO USE SPRINTF, GO TO Build -> ARM Linker -> Basic Options IN PROJECT
+ * PROPERTIES SET C SYSTEM STACK SIZE TO 65536
+ */
 int main(void) {
-    ConsoleInit(); // initialized UART0 for console output using UARTStdio
-    UARTprintf("\n\nTiva has turned on...\n");
-    // Set the clocking to run directly from the crystal at 120MHz.
+    // set the clocking to run directly from the crystal at 120MHz
     g_ui32SysClock = MAP_SysCtlClockFreqSet((SYSCTL_XTAL_25MHZ | SYSCTL_OSC_MAIN
             | SYSCTL_USE_PLL | SYSCTL_CFG_VCO_480), 120000000);
-    ROM_IntMasterEnable(); // enable processor interrupts.
-    RSInit(g_ui32SysClock); // Initialize the RS485 link
-    ConsoleInit(); // initialized UART0 for console output using UARTStdio
-    //UARTSend((uint8_t *)"\033[2JTiva has turned on\n\r", 24);
+    ROM_IntMasterEnable(); // enable processor interrupts
+    ConsoleInit(); // initialize UART0 for debugging output using UARTStdio
 
-    UARTprintf("Initializing...\n");
+    RS485Init(g_ui32SysClock);
+    UARTprintf("Ready...\n");
 
     int counter = 0;
     while(1) {
         // Check the busy flag in the uart7 register. If not busy, set transceiver pin low
-        if (UARTReady()){
-            UARTSetRead();
-        }
+        if (UARTReady()) { UARTSetRead(); }
 
         if(counter == 0) {
             setAddress(1);

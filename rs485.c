@@ -10,11 +10,11 @@ uint8_t OUTPUT_FREE     = 0b11111011;
 uint8_t MAX_PARAMETER_VALUE = 0x9;
 
 /**
- * Initializes clock and pins for RS485 communication
+ * Initialize clock and pins for RS485 communication.
  *
  * @param g_ui32SysClock - clock
  */
-void RSInit(uint32_t g_ui32SysClock) {
+void RS485Init(uint32_t g_ui32SysClock) {
     // copy over clock created in main
     uartSysClock = g_ui32SysClock;
     // enable peripherals
@@ -45,10 +45,10 @@ void RSInit(uint32_t g_ui32SysClock) {
 }
 
 /**
- * Sends given string buffer over RS485
+ * Send given string buffer over RS485.
  *
- * @param pui8Buffer  - pointer to byte buffer to send over RS485
- * @param ui32Count   - length of buffer in bytes
+ * @param pui8Buffer - pointer to byte buffer to send over RS485
+ * @param ui32Count - length of buffer in bytes
  */
 void UARTSend(const uint8_t *pui8Buffer, uint32_t ui32Count) {
     // TODO: implement construction of prefix bytes by ORing masks
@@ -85,7 +85,7 @@ void UARTSend(const uint8_t *pui8Buffer, uint32_t ui32Count) {
 // <<<<<<<<<<<<<<<<<<>>>>>>>>>>>>>>>>>>
 
 /**
- * Send a get message
+ * Send a get message.
  *
  * @param addr - address of actuator
  * @param pParMask - mask of parameter to get
@@ -97,7 +97,7 @@ void sendGet(uint8_t addr, uint8_t pParMask) {
 }
 
 /**
- * Send a set message
+ * Send a set message.
  *
  * @param addr - address of actuator
  * @param pParMask - mask of parameter to get
@@ -119,7 +119,7 @@ void sendSetFloatPar(uint8_t addr, uint8_t pParMask, float pParVal) {
 }
 
 /**
- * Send a set message
+ * Send a set message.
  *
  * @param addr - address of actuator
  * @param pParMask - mask of parameter to get
@@ -136,7 +136,7 @@ void sendSetBytePar(uint8_t addr, uint8_t pParMask, uint8_t pParVal) {
 }
 
 /**
- * Sends empty message on address BROADCASTADDR so avocados know to keep working
+ * Send empty message on address BROADCASTADDR so avocados know to keep working.
  */
 void heartBeat() { UARTSend((uint8_t[]) { BROADCASTADDR }, 1); }
 
@@ -147,7 +147,7 @@ void heartBeat() { UARTSend((uint8_t[]) { BROADCASTADDR }, 1); }
 // <<<<<<< SET >>>>>>>
 
 /**
- * Set address of any other devices on bus
+ * Set address of any other devices on bus.
  *
  * @param addr - address to set on device
  */
@@ -156,7 +156,7 @@ void setAddress(uint8_t addr) {
 }
 
 /**
- * Set maximum current for actuator
+ * Set maximum current for actuator.
  *
  * @param addr - address of actuator
  * @param maxCurr - maximum current in amps that actuator should throttle to
@@ -167,7 +167,7 @@ void setMaxCurrent(uint8_t addr, float maxCurr) {
 
 /**
  * Set behavior to take in case of brain failure (identified through lack of
- * heartbeats)
+ * heartbeats).
  *
  * @param addr - address of actuator
  * @param eStopBehavior - bitmask indicating behavior to take in case of failure
@@ -177,7 +177,7 @@ void setEStopBehavior(uint8_t addr, uint8_t eStopBehavior) {
 }
 
 /**
- * Rotate given actuator to given position
+ * Rotate given actuator to given position.
  *
  * @param addr - address of actuator
  * @param pos - angle to rotate actuator to (in radians)
@@ -187,7 +187,7 @@ void rotateToPosition(uint8_t addr, float pos) {
 }
 
 /**
- * Rotate given actuator at given velocity
+ * Rotate given actuator at given velocity.
  *
  * @param addr - address of actuator
  * @param vel - velocity to rotate at (in rpm)
@@ -197,7 +197,7 @@ void rotateAtVelocity(uint8_t addr, float vel) {
 }
 
 /**
- * Rotate given actuator at given current
+ * Rotate given actuator at given current.
  *
  * @param addr - address of actuator
  * @param cur - current to rotate at (in amps)
@@ -209,7 +209,7 @@ void rotateAtCurrent(uint8_t addr, float cur) {
 // <<<<<<< GET >>>>>>>
 
 /**
- * Get status of avocado
+ * Get status of avocado.
  *
  * @param addr - address to set on device
  */
@@ -218,7 +218,7 @@ void getStatus(uint8_t addr) {
 }
 
 /**
- * Get current maximum current
+ * Get current maximum current.
  *
  * @param addr - address of actuator
  */
@@ -228,7 +228,7 @@ void getMaxCurrent(uint8_t addr) {
 
 /**
  * Get current behavior to take in case of brain failure (identified through
- * lack of heartbeats)
+ * lack of heartbeats).
  *
  * @param addr - address of actuator
  */
@@ -237,7 +237,7 @@ void getStopBehavior(uint8_t addr) {
 }
 
 /**
- * Get current position
+ * Get current position.
  *
  * @param addr - address of actuator
  */
@@ -246,7 +246,7 @@ void getPosition(uint8_t addr) {
 }
 
 /**
- * Get current velocity
+ * Get current velocity.
  *
  * @param addr - address of actuator
  */
@@ -255,7 +255,7 @@ void getVelocity(uint8_t addr) {
 }
 
 /**
- * Get current current
+ * Get current current.
  *
  * @param addr - address of actuator
  */
@@ -264,7 +264,7 @@ void getCurrent(uint8_t addr) {
 }
 
 /**
- * Get temperature of actuator
+ * Get temperature of actuator.
  *
  * @param addr - address of actuator
  */
@@ -277,7 +277,7 @@ void getTemperature(uint8_t addr) {
 // <<<<<<<<<<<<<<<<<<>>>>>>>>>>>>>>>>>>
 
 /**
- * Returns string corresponding to given enum value.
+ * Return string corresponding to given enum value.
  *
  * @param par - enum value whose name to return
  * @return the name of the enum value given
@@ -297,7 +297,7 @@ const char* getParameterName(enum Parameter par) {
 }
 
 /**
- * Returns string corresponding to given enum value.
+ * Return string corresponding to given enum value.
  *
  * @param par - enum value whose name to return
  * @return the name of the enum value given
@@ -319,21 +319,25 @@ bool UARTReady() {
     return GPIOPinRead(GPIO_PORTC_BASE, GPIO_PIN_7) && !UARTBusy(UART7_BASE);
 }
 
-// set transceiver rx/tx pin low for read mode
+/**
+ * Set transceiver rx/tx pin low for read mode.
+ */
 void UARTSetRead() { GPIOPinWrite(GPIO_PORTC_BASE, GPIO_PIN_6, 0); }
 
-// set transceiver rx/tx pin low for read mode
+/**
+ * Set transceiver rx/tx pin high for write mode.
+ */
 void UARTSetWrite() { GPIOPinWrite(GPIO_PORTC_BASE, GPIO_PIN_6, GPIO_PIN_6); }
 
 /**
- * Gets address
+ * Get address.
  *
  * @return our address
  */
 uint8_t UARTGetAddress() { return BRAIN_ADDRESS; }
 
 /**
- * Prints a float
+ * Print a float.
  *
  * @param val - float to print
  * @param verbose - dictates how verbose to print
