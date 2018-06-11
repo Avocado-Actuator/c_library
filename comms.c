@@ -1,7 +1,7 @@
 #include "comms.h"
 
 uint8_t recv[10];
-uint8_t BRAIN_ADDRESS, BROADCASTADDR, ADDRSETADDR;
+uint8_t msgID, ADDR, BRAIN_ADDR, BROADCAST_ADDR, ADDR_SET_ADDR;
 uint8_t ESTOP_HOLD      = 0b11111111;
 uint8_t ESTOP_KILL      = 0b11111110;
 uint8_t COMMAND_SUCCESS = 0b11111111;
@@ -9,6 +9,12 @@ uint8_t COMMAND_FAILURE = 0b11111101;
 uint8_t OUTPUT_LIMITING = 0b11111111;
 uint8_t OUTPUT_FREE     = 0b11111011;
 uint8_t MAX_PARAMETER_VALUE = 0x9;
+
+union Flyte holderFlyte;
+
+// <<<<<<<<<<<<<<<>>>>>>>>>>>>>>
+// <<<<<<<<<<<< INITS >>>>>>>>>>
+// <<<<<<<<<<<<<<<>>>>>>>>>>>>>>
 
 /**
  * Initialize clock and pins for communication.
@@ -18,26 +24,67 @@ uint8_t MAX_PARAMETER_VALUE = 0x9;
 void CommsInit(uint32_t g_ui32SysClock) {
     // copy over clock created in main
     uartSysClock = g_ui32SysClock;
-    // enable peripherals
+    // enable peripherals used
     ROM_SysCtlPeripheralEnable(SYSCTL_PERIPH_UART7);
     ROM_SysCtlPeripheralEnable(SYSCTL_PERIPH_GPIOC);
     GPIOPinConfigure(GPIO_PC4_U7RX);
     GPIOPinConfigure(GPIO_PC5_U7TX);
     ROM_GPIOPinTypeUART(GPIO_PORTC_BASE, GPIO_PIN_4 | GPIO_PIN_5);
-    // enable GPIO port C pin 6 as transceiver rx/tx pin
+    // enable GPIO port C pin 6 as the RS-485 transceiver rx/tx pin
     GPIOPinTypeGPIOOutput(GPIO_PORTC_BASE, GPIO_PIN_6);
     // enable tied pin as input to read output of enable pin
     GPIOPinTypeGPIOInput(GPIO_PORTC_BASE, GPIO_PIN_7);
-    // configure UART for `115,200`, 8-N-1 operation.
-    ROM_UARTConfigSetExpClk(UART7_BASE, uartSysClock, 115200,
-      (UART_CONFIG_WLEN_8 | UART_CONFIG_STOP_ONE | UART_CONFIG_PAR_NONE));
+    // configure UART for 115,200, 8-N-1 operation
+    ROM_UARTConfigSetExpClk(UART7_BASE, g_ui32SysClock, 9600,
+                            (UART_CONFIG_WLEN_8 | UART_CONFIG_STOP_ONE |
+                             UART_CONFIG_PAR_NONE));
     // enable UART interrupt
     ROM_IntEnable(INT_UART7);
     ROM_UARTIntEnable(UART7_BASE, UART_INT_RX | UART_INT_RT);
-    BRAIN_ADDRESS = 0x00;
-    BROADCASTADDR = 0xFF;
-    ADDRSETADDR = 0xFE;
+
+    response_index = 0;
+    msgID = 0;
+    recvIndex = 0;
+    STOP_BYTE = '!';
+
+    BRAIN_ADDR = 0x0;
+    ADDR = 0x1;
+    BROADCAST_ADDR = 0xFF;
+    ADDR_SET_ADDR = 0xFE;
+
+    CMD_MASK = 0b10000000; // 1 is SET and 0 is GET
+    PAR_MASK = 0b00000111; // gives just parameter selector bits
+
+    holderFlyte.f = NULL;
+    int i;
+    for(i = 0; i < 256; ++i) response_buffer[i] = holderFlyte;
+
     UARTprintf("Communication initialized\n");
+}
+
+/**
+ * Initializes UART0 for console output using UARTStdio.
+ */
+void ConsoleInit(void) {
+    // enable GPIO port A used for UART0 pins
+    SysCtlPeripheralEnable(SYSCTL_PERIPH_GPIOA);
+    // configure pin muxing for UART0 functions on port A0 and A1
+    // this step is not necessary if your part does not support pin muxing
+    GPIOPinConfigure(GPIO_PA0_U0RX);
+    GPIOPinConfigure(GPIO_PA1_U0TX);
+    // enable UART0 so that we can configure the clock
+    SysCtlPeripheralEnable(SYSCTL_PERIPH_UART0);
+    // use internal 16MHz oscillator as the UART clock source
+    UARTClockSourceSet(UART0_BASE, UART_CLOCK_PIOSC);
+    // select alternate (UART) function for these pins
+    GPIOPinTypeUART(GPIO_PORTA_BASE, GPIO_PIN_0 | GPIO_PIN_1);
+    // initialize UART for console I/O
+    UARTStdioConfig(0, 9600, 16000000);
+
+    // enable UART interrupt
+    ROM_IntEnable(INT_UART0);
+    ROM_UARTIntEnable(UART0_BASE, UART_INT_RX | UART_INT_RT);
+    UARTprintf("Console initialized\n");
 }
 
 /**
@@ -154,9 +201,9 @@ uint8_t sendSetBytePar(uint8_t addr, uint8_t pParMask, uint8_t pParVal) {
 }
 
 /**
- * Send empty message on address BROADCASTADDR so avocados know to keep working.
+ * Send empty message on address BROADCAST_ADDR so avocados know to keep working.
  */
-void heatbeat() { UARTSend((uint8_t[]) { BROADCASTADDR }, 1); }
+void heatbeat() { UARTSend((uint8_t[]) { BROADCAST_ADDR }, 1); }
 
 // <<<<<<<<<<<<<<<<<<>>>>>>>>>>>>>>>>>>
 // <<<<<<<<<<<<< MESSAGES >>>>>>>>>>>>>
@@ -167,10 +214,17 @@ void heatbeat() { UARTSend((uint8_t[]) { BROADCASTADDR }, 1); }
 /**
  * Set address of any other devices on bus.
  *
+ * Special case doesn't use a parameter mask byte in protocol structure
+ *
  * @param addr - address to set on device
  */
 uint8_t setAddress(uint8_t addr) {
-    sendSetBytePar(ADDRSETADDR, (uint8_t) Adr, addr);
+    uint8_t msg[3];
+    msg[0] = ADDR_SET_ADDR;
+    msg[1] = msgID;
+    msg[2] = addr;
+    UARTSend(msg, 3);
+    return msgID++;
 }
 
 /**
@@ -342,7 +396,7 @@ bool UARTReady() {
  *
  * @return our address
  */
-uint8_t UARTGetAddress() { return BRAIN_ADDRESS; }
+uint8_t UARTGetAddress() { return BRAIN_ADDR; }
 
 /**
  * Print a float.
