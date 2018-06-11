@@ -242,7 +242,11 @@ void UARTSend(const uint8_t *buffer, uint32_t length) {
 // <<<<<<<<<<<<<<<<>>>>>>>>>>>>>>>>
 
 // <<<<<<<<<<<<< SENDS >>>>>>>>>>>>>
-// <<<<<<<<<<<<<<<<<<>>>>>>>>>>>>>>>>>>
+
+/**
+ * Send empty message on address BROADCAST_ADDR so avocados know to keep working.
+ */
+void heartbeat() { UARTSend((uint8_t[]) { BROADCAST_ADDR }, 1); /*UARTprintf("%d*\n", heartbeat_counter);*/ }
 
 /**
  * Send a get message.
@@ -252,8 +256,9 @@ void UARTSend(const uint8_t *buffer, uint32_t length) {
  */
 uint8_t sendGet(uint8_t addr, uint8_t pParMask) {
     // since get is 0 in msb of pParMask no need to do anything
-    uint8_t msg[2] = { addr, pParMask };
-    UARTSend(msg, 2);
+    uint8_t msg[3] = { addr, msgID, pParMask };
+    UARTSend(msg, 3);
+    return msgID++;
 }
 
 /**
@@ -264,18 +269,20 @@ uint8_t sendGet(uint8_t addr, uint8_t pParMask) {
  * @param pParVal - float value to set
  */
 uint8_t sendSetFloatPar(uint8_t addr, uint8_t pParMask, float pParVal) {
-    uint8_t msgLen = 6; // 1 byte for addr, 1 for mask, 4 for val
-    uint8_t msg[msgLen];
+    // 1 byte for addr, 1 byte for ID, 1 for mask, 4 for val
+    uint8_t msg[7];
     msg[0] = addr;
-    msg[1] = 0b10000000 | pParMask;
+    msg[1] = msgID;
+    msg[2] = 0b10000000 | pParMask;
 
     union Flyte parVal;
     parVal.f = pParVal;
     int i;
     for(i = 0; i < 4; ++i)
-        msg[i+2] = parVal.bytes[i];
+        msg[i+3] = parVal.bytes[i];
 
-    UARTSend(msg, msgLen);
+    UARTSend(msg, 7);
+    return msgID++;
 }
 
 /**
@@ -286,34 +293,27 @@ uint8_t sendSetFloatPar(uint8_t addr, uint8_t pParMask, float pParVal) {
  * @param pParVal - byte value to set
  */
 uint8_t sendSetBytePar(uint8_t addr, uint8_t pParMask, uint8_t pParVal) {
-    uint8_t msgLen = 3; // 1 byte for addr, 1 for mask, 1 for val
-    uint8_t msg[msgLen];
+    // 1 byte for addr, 1 for ID, 1 for mask, 1 for val
+    uint8_t msg[4];
     msg[0] = addr;
-    msg[1] = 0b10000000 | pParMask;
-    msg[2] = pParVal;
-
-    UARTSend(msg, msgLen);
+    msg[1] = msgID;
+    msg[2] = 0b10000000 | pParMask;
+    msg[3] = pParVal;
+    UARTSend(msg, 4);
+    return msgID++;
 }
 
-/**
- * Send empty message on address BROADCAST_ADDR so avocados know to keep working.
- */
-void heatbeat() { UARTSend((uint8_t[]) { BROADCAST_ADDR }, 1); }
-
-// <<<<<<<<<<<<<<<<<<>>>>>>>>>>>>>>>>>>
 // <<<<<<<<<<<<< MESSAGES >>>>>>>>>>>>>
-// <<<<<<<<<<<<<<<<<<>>>>>>>>>>>>>>>>>>
 
 // <<<<<<< SET >>>>>>>
 
 /**
  * Set address of any other devices on bus.
  *
- * Special case doesn't use a parameter mask byte in protocol structure
- *
  * @param addr - address to set on device
  */
 uint8_t setAddress(uint8_t addr) {
+    // special case doesn't use a parameter mask byte in protocol structure
     uint8_t msg[3];
     msg[0] = ADDR_SET_ADDR;
     msg[1] = msgID;
@@ -329,7 +329,7 @@ uint8_t setAddress(uint8_t addr) {
  * @param maxCurr - maximum current in amps that actuator should throttle to
  */
 uint8_t setMaxCurrent(uint8_t addr, float maxCurr) {
-    sendSetFloatPar(addr, (uint8_t) MaxCur, maxCurr);
+    return sendSetFloatPar(addr, (uint8_t) MaxCur, maxCurr);
 }
 
 /**
@@ -337,10 +337,10 @@ uint8_t setMaxCurrent(uint8_t addr, float maxCurr) {
  * heartbeats).
  *
  * @param addr - address of actuator
- * @param eStopBehavior - bitmask indicating behavior to take in case of failure
+ * @param eStopBehavior - bitmask indicating behavior to take in case of failure. 1 = hold position, 0 = kill motor power
  */
 uint8_t setEStopBehavior(uint8_t addr, uint8_t eStopBehavior) {
-    sendSetBytePar(addr, (uint8_t) EStop, eStopBehavior);
+    return sendSetBytePar(addr, (uint8_t) EStop, eStopBehavior);
 }
 
 /**
@@ -350,7 +350,7 @@ uint8_t setEStopBehavior(uint8_t addr, uint8_t eStopBehavior) {
  * @param pos - angle to rotate actuator to (in radians)
  */
 uint8_t rotateToPosition(uint8_t addr, float pos) {
-    sendSetFloatPar(addr, (uint8_t) Pos, pos);
+    return sendSetFloatPar(addr, (uint8_t) Pos, pos);
 }
 
 /**
@@ -360,7 +360,7 @@ uint8_t rotateToPosition(uint8_t addr, float pos) {
  * @param vel - velocity to rotate at (in rpm)
  */
 uint8_t rotateAtVelocity(uint8_t addr, float vel) {
-    sendSetFloatPar(addr, (uint8_t) Vel, vel);
+    return sendSetFloatPar(addr, (uint8_t) Vel, vel);
 }
 
 /**
@@ -370,7 +370,7 @@ uint8_t rotateAtVelocity(uint8_t addr, float vel) {
  * @param cur - current to rotate at (in amps)
  */
 uint8_t rotateAtCurrent(uint8_t addr, float cur) {
-    sendSetFloatPar(addr, (uint8_t) Cur, cur);
+    return sendSetFloatPar(addr, (uint8_t) Cur, cur);
 }
 
 // <<<<<<< GET >>>>>>>
@@ -381,7 +381,7 @@ uint8_t rotateAtCurrent(uint8_t addr, float cur) {
  * @param addr - address to set on device
  */
 uint8_t getStatus(uint8_t addr) {
-    sendGet(addr, (uint8_t) Status);
+    return sendGet(addr, (uint8_t) Status);
 }
 
 /**
@@ -390,7 +390,7 @@ uint8_t getStatus(uint8_t addr) {
  * @param addr - address of actuator
  */
 uint8_t getMaxCurrent(uint8_t addr) {
-    sendGet(addr, (uint8_t) MaxCur);
+    return sendGet(addr, (uint8_t) MaxCur);
 }
 
 /**
@@ -400,7 +400,7 @@ uint8_t getMaxCurrent(uint8_t addr) {
  * @param addr - address of actuator
  */
 uint8_t getStopBehavior(uint8_t addr) {
-    sendGet(addr, (uint8_t) EStop);
+    return sendGet(addr, (uint8_t) EStop);
 }
 
 /**
@@ -409,7 +409,7 @@ uint8_t getStopBehavior(uint8_t addr) {
  * @param addr - address of actuator
  */
 uint8_t getPosition(uint8_t addr) {
-    sendGet(addr, (uint8_t) Pos);
+    return sendGet(addr, (uint8_t) Pos);
 }
 
 /**
@@ -418,7 +418,7 @@ uint8_t getPosition(uint8_t addr) {
  * @param addr - address of actuator
  */
 uint8_t getVelocity(uint8_t addr) {
-    sendGet(addr, (uint8_t) Vel);
+    return sendGet(addr, (uint8_t) Vel);
 }
 
 /**
@@ -427,7 +427,7 @@ uint8_t getVelocity(uint8_t addr) {
  * @param addr - address of actuator
  */
 uint8_t getCurrent(uint8_t addr) {
-    sendGet(addr, (uint8_t) Cur);
+    return sendGet(addr, (uint8_t) Cur);
 }
 
 /**
@@ -436,98 +436,5 @@ uint8_t getCurrent(uint8_t addr) {
  * @param addr - address of actuator
  */
 uint8_t getTemperature(uint8_t addr) {
-    sendGet(addr, (uint8_t) Tmp);
-}
-
-// <<<<<<<<<<<<<<<<<<>>>>>>>>>>>>>>>>>>
-// <<<<<<<<<<<< UTILITIES >>>>>>>>>>>>>
-// <<<<<<<<<<<<<<<<<<>>>>>>>>>>>>>>>>>>
-
-/**
- * Return string corresponding to given enum value.
- *
- * @param par - enum value whose name to return
- * @return the name of the enum value given
- */
-const char* getParameterName(enum Parameter par) {
-    switch(par) {
-        case Adr: return "Adr";
-        case Tmp: return "Tmp";
-        case Cur: return "Cur";
-        case Vel: return "Vel";
-        case Pos: return "Pos";
-        case MaxCur: return "MaxCur";
-        case EStop: return "EStop";
-        case Status: return "Status";
-        default: return "NOP";
-    }
-}
-
-/**
- * Return string corresponding to given enum value.
- *
- * @param par - enum value whose name to return
- * @return the name of the enum value given
- */
-const char* getCommandName(enum Command cmd) {
-    switch(cmd) {
-        case Get: return "Get";
-        case Set: return "Set";
-        default: return "NOP";
-    }
-}
-
-/**
- * Check if UART is ready to send.
- *
- * @return true if we are ready, false otherwise
- */
-bool UARTReady() {
-    return GPIOPinRead(GPIO_PORTC_BASE, GPIO_PIN_7) && !UARTBusy(UART7_BASE);
-}
-
-/**
- * Get address.
- *
- * @return our address
- */
-uint8_t UARTGetAddress() { return BRAIN_ADDR; }
-
-/**
- * Print a float.
- *
- * @param val - float to print
- * @param verbose - dictates how verbose to print
- */
-void UARTPrintFloat(float val, bool verbose) {
-    char str[50]; // pretty arbitrarily chosen
-    sprintf(str, "%f", val);
-    verbose
-        ? UARTprintf("val, length: %s, %d\n", str, strlen(str))
-        : UARTprintf("%s\n", str);
-}
-
-// <<<<<<<<<<<<<<<<<<>>>>>>>>>>>>>>>>>>
-// <<<<<<<<<<<<< HANDLING >>>>>>>>>>>>>
-// <<<<<<<<<<<<<<<<<<>>>>>>>>>>>>>>>>>>
-
-/**
- * Take actions on message as appropriate.
- *
- * If address does not match our own, bail out and send message on.
- *
- * @param buffer - pointer to the message
- * @param length - the length of the message
- * @param verbose - if true print to console for debugging
- * @param echo - if true simply echo the message, can also be helpful for debugging
- * @return if we successfully handled a message meant for us
- */
-bool handleUART(char* buffer, uint32_t length, bool verbose, bool echo) {
-    // CURRENTLY ONLY EVER ECHOING
-    UARTSend((uint8_t *) buffer, length);
-    int i;
-    for (i = 0; i < length; ++i) {
-        UARTprintf("Text[%d]: %s\n", i, buffer[i]);
-    }
-    return false;
+    return sendGet(addr, (uint8_t) Tmp);
 }
