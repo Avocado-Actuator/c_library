@@ -1,4 +1,4 @@
-#include "rs485.h"
+#include "comms.h"
 
 uint8_t BRAIN_ADDRESS, BROADCASTADDR, ADDRSETADDR;
 uint8_t ESTOP_HOLD      = 0b11111111;
@@ -10,11 +10,11 @@ uint8_t OUTPUT_FREE     = 0b11111011;
 uint8_t MAX_PARAMETER_VALUE = 0x9;
 
 /**
- * Initialize clock and pins for RS485 communication.
+ * Initialize clock and pins for communication.
  *
  * @param g_ui32SysClock - clock
  */
-void RS485Init(uint32_t g_ui32SysClock) {
+void CommsInit(uint32_t g_ui32SysClock) {
     // copy over clock created in main
     uartSysClock = g_ui32SysClock;
     // enable peripherals
@@ -23,7 +23,7 @@ void RS485Init(uint32_t g_ui32SysClock) {
     GPIOPinConfigure(GPIO_PC4_U7RX);
     GPIOPinConfigure(GPIO_PC5_U7TX);
     ROM_GPIOPinTypeUART(GPIO_PORTC_BASE, GPIO_PIN_4 | GPIO_PIN_5);
-    // enable GPIO port C pin 6 as RS485 transceiver rx/tx pin
+    // enable GPIO port C pin 6 as transceiver rx/tx pin
     GPIOPinTypeGPIOOutput(GPIO_PORTC_BASE, GPIO_PIN_6);
     // enable tied pin as input to read output of enable pin
     GPIOPinTypeGPIOInput(GPIO_PORTC_BASE, GPIO_PIN_7);
@@ -41,13 +41,13 @@ void RS485Init(uint32_t g_ui32SysClock) {
     BRAIN_ADDRESS = 0x00;
     BROADCASTADDR = 0xFF;
     ADDRSETADDR = 0xFE;
-    UARTprintf("RS485 initialized\n");
+    UARTprintf("Communication initialized\n");
 }
 
 /**
- * Send given string buffer over RS485.
+ * Send given string buffer
  *
- * @param pui8Buffer - pointer to byte buffer to send over RS485
+ * @param pui8Buffer - pointer to byte buffer to send
  * @param ui32Count - length of buffer in bytes
  */
 void UARTSend(const uint8_t *pui8Buffer, uint32_t ui32Count) {

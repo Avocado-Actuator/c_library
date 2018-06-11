@@ -14,7 +14,7 @@
 #include "utils/uartstdio.h"
 #include "utils/uartstdio.c"
 
-#include "rs485.h"
+#include "comms.h"
 
 // System clock rate in Hz.
 uint32_t g_ui32SysClock;
@@ -59,7 +59,7 @@ int main(void) {
     ROM_IntMasterEnable(); // enable processor interrupts
     ConsoleInit(); // initialize UART0 for debugging output using UARTStdio
 
-    RS485Init(g_ui32SysClock);
+    CommsInit(g_ui32SysClock);
     UARTprintf("Ready...\n");
 
     int counter = 0;

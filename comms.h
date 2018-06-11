@@ -1,5 +1,5 @@
-#ifndef RS485_H_
-#define RS485_H_
+#ifndef COMMS_H_
+#define COMMS_H_
 
 #include <stdbool.h>
 #include <stdint.h>
@@ -18,7 +18,7 @@
 #include "driverlib/rom_map.h"
 #include "crc.h"
 
-void RSInit(uint32_t);
+void CommsInit(uint32_t);
 void UARTIntHandler(void);
 void UARTSend(const uint8_t*, uint32_t);
 bool UARTReady(void);
@@ -85,4 +85,4 @@ enum Parameter {
     Status  = 7
 };
 
-#endif /* RS485_H_ */
+#endif /* COMMS_H_ */
