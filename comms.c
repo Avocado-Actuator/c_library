@@ -1,5 +1,6 @@
 #include "comms.h"
 
+uint8_t recv[10];
 uint8_t BRAIN_ADDRESS, BROADCASTADDR, ADDRSETADDR;
 uint8_t ESTOP_HOLD      = 0b11111111;
 uint8_t ESTOP_KILL      = 0b11111110;
@@ -37,6 +38,30 @@ void CommsInit(uint32_t g_ui32SysClock) {
     BROADCASTADDR = 0xFF;
     ADDRSETADDR = 0xFE;
     UARTprintf("Communication initialized\n");
+}
+
+/**
+ * UART interrupt handler, fires when character received.
+ */
+void UARTIntHandler(void) {
+    // get the interrrupt status
+    uint32_t ui32Status = ROM_UARTIntStatus(UART7_BASE, true);
+    // clear the asserted interrupts
+    ROM_UARTIntClear(UART7_BASE, ui32Status);
+    // so we can't be interrupted by another character arriving
+    ROM_UARTIntDisable(UART7_BASE, UART_INT_RX | UART_INT_RT);
+
+    uint8_t character = ROM_UARTCharGetNonBlocking(UART7_BASE);
+    recv[recvIndex++] = character;
+
+    if(character == STOP_BYTE) {
+        handleUART(recv, recvIndex, true, true);
+        recvIndex = 0;
+    }
+
+    // delay for 1 millisecond. Each SysCtlDelay is about 3 clocks.
+    SysCtlDelay(uartSysClock / (1000 * 3));
+    ROM_UARTIntEnable(UART7_BASE, UART_INT_RX | UART_INT_RT);
 }
 
 /**
@@ -356,40 +381,4 @@ bool handleUART(char* buffer, uint32_t length, bool verbose, bool echo) {
         UARTprintf("Text[%d]: %s\n", i, buffer[i]);
     }
     return false;
-}
-
-/**
- * UART interrupt handler, fires when character received.
- *
- * Currently blocks getting all characters.
- * TODO: asynchronously receive characters, add to buffer
- */
-void UARTIntHandler(void) {
-    // get interrupt status
-    uint32_t ui32Status = ROM_UARTIntStatus(UART7_BASE, true);
-    // clear asserted interrupts
-    ROM_UARTIntClear(UART7_BASE, ui32Status);
-    // initialize recv buffer
-    char recv[10] = "";
-    uint32_t ind = 0;
-    char curr = ROM_UARTCharGet(UART7_BASE);
-    // Loop while there are characters in the receive FIFO.
-    while(curr != STOP_BYTE && ind < 10) {
-        recv[ind] = curr;
-        ind++;
-        curr = ROM_UARTCharGet(UART7_BASE);
-    }
-
-    // keep stop byte for tokenizing
-    recv[ind] = curr;
-    ind++;
-
-    /*uint8_t crcin = recv[ind-2];
-    if (crc8(0, (uint8_t *)recv, ind-2) != crcin){
-        // ********** ERROR ***********
-        // Handle corrupted message
-    }*/
-
-    // handle given message
-    handleUART(recv, ind, true, true);
 }
