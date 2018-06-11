@@ -87,13 +87,33 @@ void ConsoleInit(void) {
     UARTprintf("Console initialized\n");
 }
 
+// <<<<<<<<<<<<<<<<>>>>>>>>>>>>>>>>
+// <<<<<<<<<<<< HANDLERS >>>>>>>>>>
+// <<<<<<<<<<<<<<<<>>>>>>>>>>>>>>>>
+
+/**
+ * Console interrupt handler, fires when character received.
+ */
+void ConsoleIntHandler(void) {
+    // get interrupt status
+    uint32_t ui32Status = ROM_UARTIntStatus(UART0_BASE, true);
+    // clear asserted interrupts
+    ROM_UARTIntClear(UART0_BASE, ui32Status);
+
+    // loop while characters in the receive FIFO
+    while(ROM_UARTCharsAvail(UART0_BASE)) {
+        // read next character from UART and write it back to the UART
+        ROM_UARTCharPutNonBlocking(UART7_BASE, ROM_UARTCharGetNonBlocking(UART0_BASE));
+    }
+}
+
 /**
  * UART interrupt handler, fires when character received.
  */
 void UARTIntHandler(void) {
-    // get the interrrupt status
+    // get interrrupt status
     uint32_t ui32Status = ROM_UARTIntStatus(UART7_BASE, true);
-    // clear the asserted interrupts
+    // clear asserted interrupts
     ROM_UARTIntClear(UART7_BASE, ui32Status);
     // so we can't be interrupted by another character arriving
     ROM_UARTIntDisable(UART7_BASE, UART_INT_RX | UART_INT_RT);
@@ -105,9 +125,6 @@ void UARTIntHandler(void) {
         handleUART(recv, recvIndex, true, true);
         recvIndex = 0;
     }
-
-    // delay for 1 millisecond. Each SysCtlDelay is about 3 clocks.
-    SysCtlDelay(uartSysClock / (1000 * 3));
     ROM_UARTIntEnable(UART7_BASE, UART_INT_RX | UART_INT_RT);
 }
 
