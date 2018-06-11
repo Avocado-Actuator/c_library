@@ -128,41 +128,119 @@ void UARTIntHandler(void) {
     ROM_UARTIntEnable(UART7_BASE, UART_INT_RX | UART_INT_RT);
 }
 
+// <<<<<<<<<<<<<<<<>>>>>>>>>>>>>>>>
+// <<<<<<<<<<< UTILITIES >>>>>>>>>>
+// <<<<<<<<<<<<<<<<>>>>>>>>>>>>>>>>
+
 /**
- * Send given string buffer.
+ * Prints given float
  *
- * @param pui8Buffer - pointer to byte buffer to send
- * @param ui32Count - length of buffer in bytes
+ * @param val - float to print
+ * @param verbose - how descriptive to be in printing
  */
-void UARTSend(const uint8_t *pui8Buffer, uint32_t ui32Count) {
-    // TODO: implement construction of prefix bytes by ORing masks
-    // TODO: create data flags avocados can flip for the brain
-
-    // TODO: CRC need to include address?
-    // add CRC byte to message
-    uint8_t crc = crc8(0, pui8Buffer, ui32Count);
-    bool space = true;
-    // loop while there are more bytes
-    while(ui32Count--) {
-        // write next byte to UART
-        // putchar returns false if the send FIFO is full
-        space = ROM_UARTCharPutNonBlocking(UART7_BASE, *pui8Buffer);
-        // if send FIFO is full, wait until we can put the char in
-        while (!space) {
-            space = ROM_UARTCharPutNonBlocking(UART7_BASE, *pui8Buffer);
-        }
-        *pui8Buffer++;
-    }
-    // send CRC for error-checking
-    space = ROM_UARTCharPutNonBlocking(UART7_BASE, crc);
-    while(!space) { space = ROM_UARTCharPutNonBlocking(UART7_BASE, crc); }
-
-    // send stopbyte
-    space = ROM_UARTCharPutNonBlocking(UART7_BASE, STOP_BYTE);
-    while(!space) { space = ROM_UARTCharPutNonBlocking(UART7_BASE, STOP_BYTE); }
+void UARTPrintFloat(float val, bool verbose) {
+    char str[100]; // pretty arbitrarily chosen
+    sprintf(str, "%f", val);
+    verbose
+        ? UARTprintf("val, length: %s, %d\n", str, strlen(str))
+        : UARTprintf("%s\n", str);
 }
 
-// <<<<<<<<<<<<<<<<<<>>>>>>>>>>>>>>>>>>
+// <<<<<<<<<<<<<<<<>>>>>>>>>>>>>>>>
+// <<<<<<< MESSAGE HANDLING >>>>>>>
+// <<<<<<<<<<<<<<<<>>>>>>>>>>>>>>>>
+
+/**
+ * Takes actions on message as appropriate.
+ *
+ * If address does not match our own, bail out and send message on.
+ *
+ * @param buffer - pointer to the message
+ * @param length - the length of the message
+ * @param verbose - if true print to console for debugging
+ * @param echo - if true simply echo the message, can also be helpful for debugging
+ * @return if we successfully handled a message meant for us
+ */
+bool handleUART(uint8_t* buffer, uint32_t length, bool verbose, bool echo) {
+    int i;
+    if(verbose) {
+        UARTprintf("*************************************************\n");
+        UARTprintf("Address: %x\n", buffer[0]);
+        UARTprintf("Message ID: %d\n", buffer[1]);
+        if(length == 5) { UARTprintf("Value: %x\n", buffer[2]); }
+        else if(length == 8) {
+            union Flyte val;
+            for(i = 0; i < 4; ++i) val.bytes[i] = buffer[i+2];
+            UARTprintf("Value: ");
+            UARTPrintFloat(val.f, false);
+        } else {
+            UARTprintf("Message:\n");
+            for(i = 0; i < length; ++i) UARTprintf("[%d]: %x\n", i, buffer[i]);
+            return false;
+        }
+    }
+
+    uint8_t crcin = buffer[length-2];
+    if(crc8(0, (uint8_t *)buffer, length-2) != crcin) {
+        // handle corrupted message
+        UARTprintf("Corrupted message, panic!\n");
+        return false;
+    } else if(buffer[0] != BRAIN_ADDR) {
+        UARTprintf("Not my address, abort\n");
+        return false;
+    } else if(length == 5) {
+        holderFlyte.bytes[0] = buffer[2];
+        response_buffer[buffer[1]] = holderFlyte;
+    } else if(length == 8) {
+        for (i = 0; i < 4; ++i) { holderFlyte.bytes[i] = buffer[i+2]; }
+        response_buffer[buffer[1]] = holderFlyte;
+    } else {
+        UARTprintf("Invalid message, panic!\n");
+        return false;
+    }
+
+    return true;
+}
+
+/**
+ * Send message to UART connection.
+ *
+ * @param buffer - pointer to the message
+ * @param length - the length of the message
+ */
+void UARTSend(const uint8_t *buffer, uint32_t length) {
+    int i;
+    UARTprintf("Sending: ");
+    for (i = 0; i < length; ++i) { UARTprintf("%x ", buffer[i]); }
+    // so we can't be interrupted by the heartbeat trying to send
+    ROM_TimerIntDisable(TIMER0_BASE, TIMER_TIMA_TIMEOUT);
+    // Add CRC byte to message
+    uint8_t crc = crc8(0, (const unsigned char*) buffer, length);
+    UARTprintf("%x ", crc);
+    UARTprintf("%x\n", '!');
+    bool space;
+    for (i = 0; i < length; ++i) {
+        // write the next character to the UART.
+        // putchar returns false if the send FIFO is full
+        space = ROM_UARTCharPutNonBlocking(UART7_BASE, buffer[i]);
+        // if send FIFO is full, wait until we can put the char in
+        while(!space) { space = ROM_UARTCharPutNonBlocking(UART7_BASE, buffer[i]); }
+    }
+
+    space = ROM_UARTCharPutNonBlocking(UART7_BASE, crc);
+    // if send FIFO is full, wait until we can put the char in
+    while(!space) { space = ROM_UARTCharPutNonBlocking(UART7_BASE, crc); }
+    space = ROM_UARTCharPutNonBlocking(UART7_BASE, STOP_BYTE);
+    // if send FIFO is full, wait until we can put the char in
+    while(!space) { space = ROM_UARTCharPutNonBlocking(UART7_BASE, STOP_BYTE); }
+
+    ROM_TimerIntEnable(TIMER0_BASE, TIMER_TIMA_TIMEOUT);
+}
+
+// <<<<<<<<<<<<<<<<>>>>>>>>>>>>>>>>
+// <<<<<<<<<<< C LIBRARY >>>>>>>>>>
+// <<<<<<<<<<<<<<<<>>>>>>>>>>>>>>>>
+
 // <<<<<<<<<<<<< SENDS >>>>>>>>>>>>>
 // <<<<<<<<<<<<<<<<<<>>>>>>>>>>>>>>>>>>
 
