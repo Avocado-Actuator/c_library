@@ -27,17 +27,12 @@ void CommsInit(uint32_t g_ui32SysClock) {
     GPIOPinTypeGPIOOutput(GPIO_PORTC_BASE, GPIO_PIN_6);
     // enable tied pin as input to read output of enable pin
     GPIOPinTypeGPIOInput(GPIO_PORTC_BASE, GPIO_PIN_7);
-    // write transceiver enable pin low for listening
-    UARTSetRead();
     // configure UART for `115,200`, 8-N-1 operation.
     ROM_UARTConfigSetExpClk(UART7_BASE, uartSysClock, 115200,
       (UART_CONFIG_WLEN_8 | UART_CONFIG_STOP_ONE | UART_CONFIG_PAR_NONE));
     // enable UART interrupt
     ROM_IntEnable(INT_UART7);
     ROM_UARTIntEnable(UART7_BASE, UART_INT_RX | UART_INT_RT);
-    addrmask = 0b00001111;
-    cmdmask = 0b10000000; // command selector bits (0 = get, 1 = set)
-    parmask = 0b00000111; // parameter selector bits
     BRAIN_ADDRESS = 0x00;
     BROADCASTADDR = 0xFF;
     ADDRSETADDR = 0xFE;
@@ -45,7 +40,7 @@ void CommsInit(uint32_t g_ui32SysClock) {
 }
 
 /**
- * Send given string buffer
+ * Send given string buffer.
  *
  * @param pui8Buffer - pointer to byte buffer to send
  * @param ui32Count - length of buffer in bytes
@@ -57,8 +52,6 @@ void UARTSend(const uint8_t *pui8Buffer, uint32_t ui32Count) {
     // TODO: CRC need to include address?
     // add CRC byte to message
     uint8_t crc = crc8(0, pui8Buffer, ui32Count);
-    // set transceiver rx/tx pin high to send
-    UARTSetWrite();
     bool space = true;
     // loop while there are more bytes
     while(ui32Count--) {
@@ -76,8 +69,8 @@ void UARTSend(const uint8_t *pui8Buffer, uint32_t ui32Count) {
     while(!space) { space = ROM_UARTCharPutNonBlocking(UART7_BASE, crc); }
 
     // send stopbyte
-    space = ROM_UARTCharPutNonBlocking(UART7_BASE, STOPBYTE);
-    while(!space) { space = ROM_UARTCharPutNonBlocking(UART7_BASE, STOPBYTE); }
+    space = ROM_UARTCharPutNonBlocking(UART7_BASE, STOP_BYTE);
+    while(!space) { space = ROM_UARTCharPutNonBlocking(UART7_BASE, STOP_BYTE); }
 }
 
 // <<<<<<<<<<<<<<<<<<>>>>>>>>>>>>>>>>>>
@@ -90,7 +83,7 @@ void UARTSend(const uint8_t *pui8Buffer, uint32_t ui32Count) {
  * @param addr - address of actuator
  * @param pParMask - mask of parameter to get
  */
-void sendGet(uint8_t addr, uint8_t pParMask) {
+uint8_t sendGet(uint8_t addr, uint8_t pParMask) {
     // since get is 0 in msb of pParMask no need to do anything
     uint8_t msg[2] = { addr, pParMask };
     UARTSend(msg, 2);
@@ -103,7 +96,7 @@ void sendGet(uint8_t addr, uint8_t pParMask) {
  * @param pParMask - mask of parameter to get
  * @param pParVal - float value to set
  */
-void sendSetFloatPar(uint8_t addr, uint8_t pParMask, float pParVal) {
+uint8_t sendSetFloatPar(uint8_t addr, uint8_t pParMask, float pParVal) {
     uint8_t msgLen = 6; // 1 byte for addr, 1 for mask, 4 for val
     uint8_t msg[msgLen];
     msg[0] = addr;
@@ -125,7 +118,7 @@ void sendSetFloatPar(uint8_t addr, uint8_t pParMask, float pParVal) {
  * @param pParMask - mask of parameter to get
  * @param pParVal - byte value to set
  */
-void sendSetBytePar(uint8_t addr, uint8_t pParMask, uint8_t pParVal) {
+uint8_t sendSetBytePar(uint8_t addr, uint8_t pParMask, uint8_t pParVal) {
     uint8_t msgLen = 3; // 1 byte for addr, 1 for mask, 1 for val
     uint8_t msg[msgLen];
     msg[0] = addr;
@@ -138,7 +131,7 @@ void sendSetBytePar(uint8_t addr, uint8_t pParMask, uint8_t pParVal) {
 /**
  * Send empty message on address BROADCASTADDR so avocados know to keep working.
  */
-void heartBeat() { UARTSend((uint8_t[]) { BROADCASTADDR }, 1); }
+void heatbeat() { UARTSend((uint8_t[]) { BROADCASTADDR }, 1); }
 
 // <<<<<<<<<<<<<<<<<<>>>>>>>>>>>>>>>>>>
 // <<<<<<<<<<<<< MESSAGES >>>>>>>>>>>>>
@@ -151,7 +144,7 @@ void heartBeat() { UARTSend((uint8_t[]) { BROADCASTADDR }, 1); }
  *
  * @param addr - address to set on device
  */
-void setAddress(uint8_t addr) {
+uint8_t setAddress(uint8_t addr) {
     sendSetBytePar(ADDRSETADDR, (uint8_t) Adr, addr);
 }
 
@@ -161,7 +154,7 @@ void setAddress(uint8_t addr) {
  * @param addr - address of actuator
  * @param maxCurr - maximum current in amps that actuator should throttle to
  */
-void setMaxCurrent(uint8_t addr, float maxCurr) {
+uint8_t setMaxCurrent(uint8_t addr, float maxCurr) {
     sendSetFloatPar(addr, (uint8_t) MaxCur, maxCurr);
 }
 
@@ -172,7 +165,7 @@ void setMaxCurrent(uint8_t addr, float maxCurr) {
  * @param addr - address of actuator
  * @param eStopBehavior - bitmask indicating behavior to take in case of failure
  */
-void setEStopBehavior(uint8_t addr, uint8_t eStopBehavior) {
+uint8_t setEStopBehavior(uint8_t addr, uint8_t eStopBehavior) {
     sendSetBytePar(addr, (uint8_t) EStop, eStopBehavior);
 }
 
@@ -182,7 +175,7 @@ void setEStopBehavior(uint8_t addr, uint8_t eStopBehavior) {
  * @param addr - address of actuator
  * @param pos - angle to rotate actuator to (in radians)
  */
-void rotateToPosition(uint8_t addr, float pos) {
+uint8_t rotateToPosition(uint8_t addr, float pos) {
     sendSetFloatPar(addr, (uint8_t) Pos, pos);
 }
 
@@ -192,7 +185,7 @@ void rotateToPosition(uint8_t addr, float pos) {
  * @param addr - address of actuator
  * @param vel - velocity to rotate at (in rpm)
  */
-void rotateAtVelocity(uint8_t addr, float vel) {
+uint8_t rotateAtVelocity(uint8_t addr, float vel) {
     sendSetFloatPar(addr, (uint8_t) Vel, vel);
 }
 
@@ -202,7 +195,7 @@ void rotateAtVelocity(uint8_t addr, float vel) {
  * @param addr - address of actuator
  * @param cur - current to rotate at (in amps)
  */
-void rotateAtCurrent(uint8_t addr, float cur) {
+uint8_t rotateAtCurrent(uint8_t addr, float cur) {
     sendSetFloatPar(addr, (uint8_t) Cur, cur);
 }
 
@@ -213,7 +206,7 @@ void rotateAtCurrent(uint8_t addr, float cur) {
  *
  * @param addr - address to set on device
  */
-void getStatus(uint8_t addr) {
+uint8_t getStatus(uint8_t addr) {
     sendGet(addr, (uint8_t) Status);
 }
 
@@ -222,7 +215,7 @@ void getStatus(uint8_t addr) {
  *
  * @param addr - address of actuator
  */
-void getMaxCurrent(uint8_t addr) {
+uint8_t getMaxCurrent(uint8_t addr) {
     sendGet(addr, (uint8_t) MaxCur);
 }
 
@@ -232,7 +225,7 @@ void getMaxCurrent(uint8_t addr) {
  *
  * @param addr - address of actuator
  */
-void getStopBehavior(uint8_t addr) {
+uint8_t getStopBehavior(uint8_t addr) {
     sendGet(addr, (uint8_t) EStop);
 }
 
@@ -241,7 +234,7 @@ void getStopBehavior(uint8_t addr) {
  *
  * @param addr - address of actuator
  */
-void getPosition(uint8_t addr) {
+uint8_t getPosition(uint8_t addr) {
     sendGet(addr, (uint8_t) Pos);
 }
 
@@ -250,7 +243,7 @@ void getPosition(uint8_t addr) {
  *
  * @param addr - address of actuator
  */
-void getVelocity(uint8_t addr) {
+uint8_t getVelocity(uint8_t addr) {
     sendGet(addr, (uint8_t) Vel);
 }
 
@@ -259,7 +252,7 @@ void getVelocity(uint8_t addr) {
  *
  * @param addr - address of actuator
  */
-void getCurrent(uint8_t addr) {
+uint8_t getCurrent(uint8_t addr) {
     sendGet(addr, (uint8_t) Cur);
 }
 
@@ -268,7 +261,7 @@ void getCurrent(uint8_t addr) {
  *
  * @param addr - address of actuator
  */
-void getTemperature(uint8_t addr) {
+uint8_t getTemperature(uint8_t addr) {
     sendGet(addr, (uint8_t) Tmp);
 }
 
@@ -318,16 +311,6 @@ const char* getCommandName(enum Command cmd) {
 bool UARTReady() {
     return GPIOPinRead(GPIO_PORTC_BASE, GPIO_PIN_7) && !UARTBusy(UART7_BASE);
 }
-
-/**
- * Set transceiver rx/tx pin low for read mode.
- */
-void UARTSetRead() { GPIOPinWrite(GPIO_PORTC_BASE, GPIO_PIN_6, 0); }
-
-/**
- * Set transceiver rx/tx pin high for write mode.
- */
-void UARTSetWrite() { GPIOPinWrite(GPIO_PORTC_BASE, GPIO_PIN_6, GPIO_PIN_6); }
 
 /**
  * Get address.
@@ -391,7 +374,7 @@ void UARTIntHandler(void) {
     uint32_t ind = 0;
     char curr = ROM_UARTCharGet(UART7_BASE);
     // Loop while there are characters in the receive FIFO.
-    while(curr != STOPBYTE && ind < 10) {
+    while(curr != STOP_BYTE && ind < 10) {
         recv[ind] = curr;
         ind++;
         curr = ROM_UARTCharGet(UART7_BASE);

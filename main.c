@@ -64,9 +64,6 @@ int main(void) {
 
     int counter = 0;
     while(1) {
-        // Check the busy flag in the uart7 register. If not busy, set transceiver pin low
-        if (UARTReady()) { UARTSetRead(); }
-
         if(counter == 0) {
             setAddress(1);
             setMaxCurrent(1, 5.0);

@@ -6,68 +6,69 @@
 #include <string.h>
 #include <stdio.h>
 #include <stdlib.h>
+
 #include "inc/hw_memmap.h"
 #include "driverlib/adc.h"
 #include "driverlib/gpio.h"
 #include "driverlib/pin_map.h"
 #include "driverlib/sysctl.h"
 #include "driverlib/uart.h"
-#include "utils/uartstdio.h"
 #include "inc/hw_ints.h"
 #include "driverlib/rom.h"
 #include "driverlib/rom_map.h"
+#include "driverlib/timer.h"
+#include "utils/uartstdio.h"
+
 #include "crc.h"
 
 void CommsInit(uint32_t);
+void ConsoleInit(void);
+void ConsoleIntHandler(void);
 void UARTIntHandler(void);
 void UARTSend(const uint8_t*, uint32_t);
-bool UARTReady(void);
-void UARTSetRead(void);
-void UARTSetWrite(void);
-void UARTSetAddress(uint8_t);
 void UARTPrintFloat(float, bool);
-uint8_t UARTGetAddress(void);
 
-// message functions
-// in future message functions
-// should return something actionable
-// for now just print out an echo
+// C Library Functions
+
+void heartbeat(void);
 
 // <<<< set >>>>
 
 // logistics
-void setAddress(uint8_t);
-void setMaxCurrent(uint8_t, float);
-void setEStopBehavior(uint8_t, uint8_t);
+uint8_t setAddress(uint8_t);
+uint8_t setMaxCurrent(uint8_t, float);
+uint8_t setEStopBehavior(uint8_t, uint8_t);
 
 // movement
-void rotateToPosition(uint8_t, float);
-void rotateAtVelocity(uint8_t, float);
-void rotateAtCurrent(uint8_t, float);
+uint8_t rotateToPosition(uint8_t, float);
+uint8_t rotateAtVelocity(uint8_t, float);
+uint8_t rotateAtCurrent(uint8_t, float);
 
 // <<<< get >>>>
 
 // logistics
-void getStatus(uint8_t);
-void getMaxCurrent(uint8_t);
-void getStopBehavior(uint8_t);
+uint8_t getStatus(uint8_t);
+uint8_t getMaxCurrent(uint8_t);
+uint8_t getStopBehavior(uint8_t);
 
 // sensors
-void getPosition(uint8_t);
-void getVelocity(uint8_t);
-void getCurrent(uint8_t);
-void getTemperature(uint8_t);
+uint8_t getPosition(uint8_t);
+uint8_t getVelocity(uint8_t);
+uint8_t getCurrent(uint8_t);
+uint8_t getTemperature(uint8_t);
 
 // <<<< data >>>>
 
-uint32_t uartSysClock;
-static uint8_t STOPBYTE = '!';
-uint8_t cmdmask, parmask, heartmask, addrmask, posval, curval, velval, tempval;
+uint8_t sendMsgFlag, recvIndex, STOP_BYTE, MAX_PAR_VAL, CMD_MASK, PAR_MASK;
+uint32_t uartSysClock, response_index;
 
+// data structures
 union Flyte {
   float f;
   uint8_t bytes[sizeof(float)];
 };
+
+union Flyte response_buffer[256];
 
 enum Command {
     Get = 0,
